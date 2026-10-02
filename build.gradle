@@ -1,0 +1,109 @@
+plugins {
+    id 'fabric-loom' version '1.12.7'
+    id 'maven-publish'
+}
+
+// ---------------------------------------------------------------------------
+// Build properties (set by gen_build.ps1, or via -P / ORG_GRADLE_PROJECT_* env):
+//   target    Minecraft version to build against, e.g. 1.21.1 / 1.21.11
+//   srcTree   'src' (old input API, 1.20.x–1.21.8) or
+//             'src-v2' (new input-event API, 1.21.9+). Auto-derived if omitted.
+//   mirrorRoot  Optional ASCII temp dir holding the mirrored sources. When set,
+//             Gradle reads sources/resources from there instead of the project
+//             tree (avoids issues with non-ASCII project paths).
+// Prefer the ORG_GRADLE_PROJECT_* env vars when the value contains dots
+// (e.g. "1.21.1"), since -Pkey=value is parsed inconsistently on Windows.
+// ---------------------------------------------------------------------------
+def target = project.findProperty('target') ?: '1.21.1'
+
+def autoV2 = false
+if (target.startsWith('26.')) {
+    autoV2 = true
+} else if (target ==~ /^1\.21\.(\d+)$/) {
+    autoV2 = (target.replaceFirst(/^1\.21\./, '') as int) >= 9
+}
+def srcTree = project.findProperty('srcTree') ?: (autoV2 ? 'src-v2' : 'src')
+
+def mirrorRoot = project.findProperty('mirrorRoot')
+def javaRoot = mirrorRoot ? "${mirrorRoot}/main/java" : "${srcTree}/main/java"
+def resRoot  = mirrorRoot ? "${mirrorRoot}/main/resources" : 'src/main/resources'
+
+// Per-target toolchain / dependency versions.
+def versionMap = [
+    '1.20.1' : [mc: '1.20.1' , yarn: '1.20.1+build.10' , baritone: 'baritone-1.20-1.20.1.jar'       , fabricApi: '0.92.2+1.20.1'],
+    '1.20.2' : [mc: '1.20.2' , yarn: '1.20.2+build.4'  , baritone: 'baritone-1.20.2.jar'            , fabricApi: '0.91.6+1.20.2'],
+    '1.20.4' : [mc: '1.20.4' , yarn: '1.20.4+build.3'  , baritone: 'baritone-1.20.3-1.20.4.jar'     , fabricApi: '0.97.2+1.20.4'],
+    '1.20.6' : [mc: '1.20.6' , yarn: '1.20.6+build.3'  , baritone: 'baritone-1.20.5-1.20.6.jar'     , fabricApi: '0.100.8+1.20.6'],
+    '1.21.1' : [mc: '1.21.1' , yarn: '1.21.1+build.2'  , baritone: 'baritone-1.21-1.21.1.jar'       , fabricApi: '0.102.0+1.21.1'],
+    '1.21.3' : [mc: '1.21.3' , yarn: '1.21.3+build.2'  , baritone: 'baritone-1.21.2-1.21.3.jar'     , fabricApi: '0.106.1+1.21.3'],
+    '1.21.4' : [mc: '1.21.4' , yarn: '1.21.4+build.2'  , baritone: 'baritone-1.21.4.jar'            , fabricApi: '0.107.0+1.21.4'],
+    '1.21.5' : [mc: '1.21.5' , yarn: '1.21.5+build.1'  , baritone: 'baritone-1.21.5.jar'            , fabricApi: '0.128.1+1.21.5'],
+    '1.21.8' : [mc: '1.21.8' , yarn: '1.21.8+build.1'  , baritone: 'baritone-1.21.6-1.21.7-1.21.8.jar', fabricApi: '0.129.0+1.21.8'],
+    '1.21.10': [mc: '1.21.10', yarn: '1.21.10+build.1' , baritone: 'baritone-1.21.9-1.21.10.jar'    , fabricApi: '0.134.1+1.21.10'],
+    '1.21.11': [mc: '1.21.11', yarn: '1.21.11+build.1' , baritone: 'baritone-1.21.11.jar'           , fabricApi: '0.135.1+1.21.11'],
+    '26.1'    : [mc: '26.1'   , yarn: '26.1+build.1'    , baritone: 'baritone-26.1.jar'             , fabricApi: '0.127.0+1.26.1'],
+    '26.2'    : [mc: '26.2'   , yarn: '26.2+build.1'    , baritone: 'baritone-26.2.jar'             , fabricApi: '0.128.0+1.26.2'],
+]
+
+if (!versionMap.containsKey(target)) {
+    throw new GradleException("Unknown target version: " + target + ". Available: " + versionMap.keySet())
+}
+
+def v = versionMap[target]
+def mcVersion = v.mc
+def yarnVersion = v.yarn
+def baritoneJar = v.baritone
+def LOADER = '0.16.14'
+def isJava25 = mcVersion.startsWith('26.')
+
+group = 'baritonegui'
+base {
+    archivesName = 'baritonegui'
+}
+version = mcVersion + '-1.0.0'
+
+repositories {
+    maven { url 'https://maven.aliyun.com/repository/public' }
+    maven { url 'https://mirrors.cloud.tencent.com/nexus/repository/maven-public/' }
+    maven { url 'https://bmclapi2.bangbang93.com/maven/' }
+    maven { url 'https://maven.fabricmc.net' }
+    mavenCentral()
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${mcVersion}"
+    // 26.x: Fabric does not publish yarn mappings yet, so this line will fail to
+    // resolve. The 26.x entries are kept for reference only.
+    mappings "net.fabricmc:yarn:${yarnVersion}:v2"
+    modImplementation "net.fabricmc:fabric-loader:${LOADER}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${v.fabricApi}"
+    // Baritone is an optional runtime dependency; the jar is bundled locally so the
+    // mod compiles without Baritone on the classpath (bridged via reflection).
+    modImplementation files("baritone-jars/${baritoneJar}")
+}
+
+sourceSets {
+    main {
+        java { srcDirs = [javaRoot] }
+        resources { srcDirs = [resRoot] }
+    }
+}
+
+processResources {
+    inputs.property 'minecraft_range', mcVersion
+    filesMatching('fabric.mod.json') {
+        expand 'minecraft_range': mcVersion
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = isJava25 ? 25 : 21
+}
+
+java {
+    sourceCompatibility = isJava25 ? JavaVersion.VERSION_25 : JavaVersion.VERSION_21
+    targetCompatibility = isJava25 ? JavaVersion.VERSION_25 : JavaVersion.VERSION_21
+}
+
+loom {
+}

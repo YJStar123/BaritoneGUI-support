@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "baritonegui",
+  "version": "1.0.0",
+  "name": "BaritoneGUI Support (Fabric)",
+  "description": "可配置、可扩展的 Baritone 快捷键 GUI：为寻路 / 挖掘 / 跟随 / 建造等核心功能绑定自定义热键，支持增删改与冲突检测。",
+  "authors": ["BaritoneGUI"],
+  "contact": {},
+  "license": "MIT",
+  "icon": "icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["baritonegui.BaritoneGuiMod"]
+  },
+  "depends": {
+    "fabricloader": ">=0.15.0",
+    "minecraft": "${minecraft_range}"
+  },
+  "suggests": {
+    "baritone": "*"
+  },
+  "mixins": ["baritonegui.mixins.json"]
+}

@@ -1,0 +1,66 @@
+# --------------------------------------------------------------------------
+# Build output (Gradle)
+# --------------------------------------------------------------------------
+build/
+.gradle/
+.mirror/
+
+# Per-target build logs written by gen_build.ps1
+build_*.log
+*.log
+logs/
+
+# --------------------------------------------------------------------------
+# Minecraft run directories (if you ever add a `run` configuration)
+# --------------------------------------------------------------------------
+run/
+runs/
+
+# --------------------------------------------------------------------------
+# IDE / editor
+# --------------------------------------------------------------------------
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.classpath
+.project
+.metadata/
+
+# --------------------------------------------------------------------------
+# OS
+# --------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+
+# --------------------------------------------------------------------------
+# JVM crash dumps
+# --------------------------------------------------------------------------
+hs_err_pid*
+replay_pid*
+
+# --------------------------------------------------------------------------
+# Third-party Baritone binaries (large, fetched separately)
+# --------------------------------------------------------------------------
+baritone-jars/
+
+# Prebuilt mod jars (regenerate via `./gradlew build` or gen_build.ps1)
+release/
+
+# --------------------------------------------------------------------------
+# Gradle Wrapper — ALWAYS TRACKED (required to build after clone).
+# Force-keep these even if a global gitignore contains `*.jar` / `*wrapper*`.
+# --------------------------------------------------------------------------
+!gradlew
+!gradlew.bat
+!gradle/wrapper/gradle-wrapper.jar
+
+# --------------------------------------------------------------------------
+# Notes:
+#   - baritone-jars/ and release/ are IGNORED (large third-party / generated files).
+#     Rebuild release/ via `./gradlew build` or gen_build.ps1. For downloadable
+#     binaries, attach them as GitHub Releases instead of committing to the repo.
+#   - gradle/wrapper/gradle-wrapper.jar is force-tracked above (required to build).
+# --------------------------------------------------------------------------
