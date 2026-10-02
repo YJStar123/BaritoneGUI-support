@@ -63,11 +63,13 @@ base {
 version = mcVersion + '-1.0.0'
 
 repositories {
+    // 官方源优先（CI / 全球网络最可靠）。
+    mavenCentral()
+    maven { url 'https://maven.fabricmc.net' }
+    // 以下为国内镜像，仅在官方源不可达时回退（本地构建加速用）。
     maven { url 'https://maven.aliyun.com/repository/public' }
     maven { url 'https://mirrors.cloud.tencent.com/nexus/repository/maven-public/' }
     maven { url 'https://bmclapi2.bangbang93.com/maven/' }
-    maven { url 'https://maven.fabricmc.net' }
-    mavenCentral()
 }
 
 dependencies {
@@ -77,9 +79,12 @@ dependencies {
     mappings "net.fabricmc:yarn:${yarnVersion}:v2"
     modImplementation "net.fabricmc:fabric-loader:${LOADER}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${v.fabricApi}"
-    // Baritone is an optional runtime dependency; the jar is bundled locally so the
-    // mod compiles without Baritone on the classpath (bridged via reflection).
-    modImplementation files("baritone-jars/${baritoneJar}")
+    // Baritone is an OPTIONAL RUNTIME dependency, accessed purely via reflection
+    // (see BaritoneBridge / BaritoneActions). There is NO compile-time dependency
+    // on it, so the build does not need baritone-jars/ at all. End users must have
+    // Baritone installed separately for the bridge to activate.
+    // (If you want to bundle/embed a specific Baritone build, uncomment below:)
+    // modImplementation files("baritone-jars/${baritoneJar}")
 }
 
 sourceSets {
