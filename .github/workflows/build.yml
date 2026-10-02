@@ -1,0 +1,88 @@
+name: Build
+
+# 触发：
+#   - 推送到 main / 打 v* tag
+#   - 发起对 main 的 PR
+#   - 手动触发（workflow_dispatch）
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      # 26.x 故意排除：Fabric 尚未发布其 yarn 映射，build.gradle 会解析失败。
+      matrix:
+        target:
+          - 1.20.1
+          - 1.20.2
+          - 1.20.4
+          - 1.20.6
+          - 1.21.1
+          - 1.21.3
+          - 1.21.4
+          - 1.21.5
+          - 1.21.8
+          - 1.21.10
+          - 1.21.11
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      # 设置 Gradle Wrapper（同时校验 wrapper 完整性）并启用构建缓存。
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # 版本号含点号，用 -P 在部分 shell 下会被错误解析，故走环境变量（与本地一致）。
+      # CI 仓库目录名为 ASCII，不存在本地中文路径问题，无需 mirrorRoot。
+      - name: Build with Gradle
+        env:
+          ORG_GRADLE_PROJECT_target: ${{ matrix.target }}
+        run: ./gradlew clean build --no-daemon
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: baritonegui-${{ matrix.target }}
+          path: build/libs/*.jar
+          if-no-files-found: error
+
+  # 仅当推送 v* tag 时，把所有构建产物汇总并发布为 GitHub Release。
+  release:
+    name: Publish Release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: List artifacts
+        run: ls -R artifacts
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*.jar
+          generate_release_notes: true
