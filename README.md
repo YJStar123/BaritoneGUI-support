@@ -104,7 +104,7 @@ baritoneGUI支持-Fabric/
 ├── release/              # 预构建 mod jar（本地构建产物，已被 .gitignore 忽略，不上传）
 └── dev/                  # 开发期辅助脚本（探测 API / 拉取版本等，非构建必需）
 ```
-
+内容部分由 AI 生成，请仔细甄别！
 ## 许可
 
 [MIT](https://opensource.org/licenses/MIT)
